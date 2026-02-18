@@ -2,7 +2,7 @@
  * Grid heatmap of attention weights for the selected layer/head. Reads from store.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 
 function blueScale(t) {
@@ -15,8 +15,8 @@ function blueScale(t) {
 
 export default function AttentionHeatmap() {
   const modelOutput = useStore((s) => s.modelOutput);
-  const currentLayer = useStore((s) => s.currentLayer);
-  const currentHead = useStore((s) => s.currentHead);
+  const [layer, setLayer] = useState(0);
+  const [head, setHead] = useState(0);
 
   if (!modelOutput?.tokens?.length || !modelOutput?.attentionWeights?.length) {
     return (
@@ -30,9 +30,9 @@ export default function AttentionHeatmap() {
   const tokens = modelOutput.tokens;
   const numLayers = modelOutput.attentionWeights.length;
   const numHeads = modelOutput.attentionWeights[0]?.length ?? 0;
-  const layer = Math.min(currentLayer, numLayers - 1);
-  const head = Math.min(currentHead, numHeads - 1);
-  const grid = modelOutput.attentionWeights[layer]?.[head];
+  const layerIdx = Math.min(layer, numLayers - 1);
+  const headIdx = Math.min(head, numHeads - 1);
+  const grid = modelOutput.attentionWeights[layerIdx]?.[headIdx];
 
   if (!grid || grid.length === 0) {
     return (

@@ -13,9 +13,9 @@ export async function runGPT2(inputText) {
     try {
       pipelineInstance = await pipeline(
         'text-generation',
-        'onnx-community/Qwen2.5-0.5B-Instruct',
+        'onnx-community/Qwen2.5-0.5B-Instruct-ONNX-INT4',
         {
-          dtype: 'q4',
+          dtype: 'int4',
           device: 'webgpu',
           progress_callback: (progress) => console.log('Loading:', progress)
         }
@@ -23,9 +23,9 @@ export async function runGPT2(inputText) {
     } catch {
       pipelineInstance = await pipeline(
         'text-generation',
-        'onnx-community/Qwen2.5-0.5B-Instruct',
+        'onnx-community/Qwen2.5-0.5B-Instruct-ONNX-INT4',
         {
-          dtype: 'q4',
+          dtype: 'int4',
           progress_callback: (progress) => console.log('Loading:', progress)
         }
       );
@@ -41,15 +41,21 @@ export async function runGPT2(inputText) {
     tokenizer.decode([id], { skip_special_tokens: false }) || `[${id}]`
   );
 
-  const outputs = await model(inputs);
+  const outputs = await model(inputs, { output_attentions: true });
+
+  console.log('OUTPUT KEYS:', Object.keys(outputs));
+  console.log('ATTENTIONS:', outputs.attentions?.length, outputs.attentions?.[0]?.dims);
 
   const logits = extractLogits(outputs.logits);
   applyRepetitionPenalty(logits, tokenIds, 1.3, 3);
+
+  const attentions = extractAttentions(outputs.attentions);
 
   return {
     tokens,
     tokenIds,
     logits,
+    attentions: attentions ?? null,
   };
 }
 
@@ -78,6 +84,31 @@ function applyRepetitionPenalty(logits, tokenIds, penalty, ngramSize) {
     const key = [...lastNgramMinusOne, x].join(',');
     if (trigrams.has(key)) lastRow[x] = -Infinity;
   }
+}
+
+function extractAttentions(attentions) {
+  if (!attentions?.length) return null;
+  return attentions.map((att) => {
+    const dims = att.dims ?? att.dim;
+    if (!dims?.length || dims.length < 4) return null;
+    const [batch, heads, seq, seqK] = dims;
+    const data = att.data;
+    if (!data) return null;
+    const layerHeads = [];
+    for (let h = 0; h < heads; h++) {
+      const headGrid = [];
+      for (let q = 0; q < seq; q++) {
+        const row = [];
+        for (let k = 0; k < seqK; k++) {
+          const idx = batch * heads * seq * seqK + h * seq * seqK + q * seqK + k;
+          row.push(data[idx]);
+        }
+        headGrid.push(row);
+      }
+      layerHeads.push(headGrid);
+    }
+    return layerHeads;
+  });
 }
 
 function extractLogits(logitsTensor) {

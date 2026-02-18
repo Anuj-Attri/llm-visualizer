@@ -14,9 +14,7 @@ import TokenEmbeddings from './visualizers/TokenEmbeddings';
 import VocabularyStatistics from './visualizers/VocabularyStatistics';
 import ProbabilityDistribution from './visualizers/ProbabilityDistribution';
 import TemperatureExplorer from './visualizers/TemperatureExplorer';
-
-const DISTILGPT2_LAYERS = 6;
-const DISTILGPT2_HEADS = 12;
+import AttentionGraph from './visualizers/AttentionGraph';
 
 export default function App() {
   const inputText = useStore((s) => s.inputText);
@@ -24,10 +22,6 @@ export default function App() {
   const setModelOutput = useStore((s) => s.setModelOutput);
   const isLoading = useStore((s) => s.isLoading);
   const setIsLoading = useStore((s) => s.setIsLoading);
-  const currentLayer = useStore((s) => s.currentLayer);
-  const setCurrentLayer = useStore((s) => s.setCurrentLayer);
-  const currentHead = useStore((s) => s.currentHead);
-  const setCurrentHead = useStore((s) => s.setCurrentHead);
   const temperature = useStore((s) => s.temperature);
   const topP = useStore((s) => s.topP);
 
@@ -83,40 +77,6 @@ export default function App() {
           <TopPSlider noLabel />
         </ParamTooltip>
 
-        <ParamTooltip
-          id="layer"
-          label={`Layer (0–${DISTILGPT2_LAYERS - 1})`}
-          tooltip="Which of the 6 transformer layers to inspect. Earlier layers capture syntax, later layers capture meaning"
-        >
-          <input
-            id="layer"
-            type="number"
-            min={0}
-            max={DISTILGPT2_LAYERS - 1}
-            value={currentLayer}
-            onChange={(e) => setCurrentLayer(Number(e.target.value) || 0)}
-            className="w-full border border-[#E0E0E0] bg-[#FAFAFA] px-3 py-2 text-sm font-mono text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A]"
-            style={{ borderRadius: '2px' }}
-          />
-        </ParamTooltip>
-
-        <ParamTooltip
-          id="head"
-          label={`Head (0–${DISTILGPT2_HEADS - 1})`}
-          tooltip="Which of the 12 attention heads to inspect. Each head learns to attend to different relationships"
-        >
-          <input
-            id="head"
-            type="number"
-            min={0}
-            max={DISTILGPT2_HEADS - 1}
-            value={currentHead}
-            onChange={(e) => setCurrentHead(Number(e.target.value) || 0)}
-            className="w-full border border-[#E0E0E0] bg-[#FAFAFA] px-3 py-2 text-sm font-mono text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A]"
-            style={{ borderRadius: '2px' }}
-          />
-        </ParamTooltip>
-
         <button
           type="button"
           onClick={onRunModel}
@@ -137,6 +97,9 @@ export default function App() {
           <VocabularyStatistics />
           <ProbabilityDistribution />
           <TemperatureExplorer />
+        </div>
+        <div className="mt-4 w-full">
+          <AttentionGraph />
         </div>
       </main>
     </div>

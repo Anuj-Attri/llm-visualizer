@@ -2,7 +2,7 @@
  * Heatmap of hidden state for selected layer (tokens × dimensions). Diverging scale centered at 0.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
 
 function divergingColor(val, minVal, maxVal) {
@@ -25,15 +25,15 @@ function divergingColor(val, minVal, maxVal) {
 
 export default function ResidualStream() {
   const modelOutput = useStore((s) => s.modelOutput);
-  const currentLayer = useStore((s) => s.currentLayer);
+  const [layer, setLayer] = useState(0);
 
   const { grid, minVal, maxVal, tokens } = useMemo(() => {
     if (!modelOutput?.hiddenStates?.length || !modelOutput?.tokens?.length) {
       return { grid: null, minVal: 0, maxVal: 0, tokens: [] };
     }
     const numLayers = modelOutput.hiddenStates.length;
-    const layer = Math.min(currentLayer, numLayers - 1);
-    const layerData = modelOutput.hiddenStates[layer];
+    const layerIdx = Math.min(layer, numLayers - 1);
+    const layerData = modelOutput.hiddenStates[layerIdx];
     if (!layerData?.length) return { grid: null, minVal: 0, maxVal: 0, tokens: modelOutput.tokens };
     let minV = Infinity;
     let maxV = -Infinity;
@@ -50,7 +50,7 @@ export default function ResidualStream() {
       maxVal: maxV,
       tokens: modelOutput.tokens,
     };
-  }, [modelOutput, currentLayer]);
+  }, [modelOutput, layer]);
 
   if (!modelOutput?.tokens?.length || !modelOutput?.hiddenStates?.length) {
     return (
@@ -78,7 +78,7 @@ export default function ResidualStream() {
   return (
     <div className="rounded border border-gray-200 bg-gray-50 p-4">
       <h3 className="text-sm font-semibold text-gray-700">
-        Residual Stream (layer {currentLayer}) — tokens × dimensions
+        Residual Stream (layer {layer}) — tokens × dimensions
       </h3>
       <div className="mt-2 overflow-auto">
         <div className="inline-block">
