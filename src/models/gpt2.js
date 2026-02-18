@@ -13,9 +13,9 @@ export async function runGPT2(inputText) {
     try {
       pipelineInstance = await pipeline(
         'text-generation',
-        'onnx-community/Qwen2.5-0.5B-Instruct-ONNX-INT4',
+        'onnx-community/Qwen2.5-0.5B-Instruct',
         {
-          dtype: 'int4',
+          dtype: 'q4',
           device: 'webgpu',
           progress_callback: (progress) => console.log('Loading:', progress)
         }
@@ -23,9 +23,9 @@ export async function runGPT2(inputText) {
     } catch {
       pipelineInstance = await pipeline(
         'text-generation',
-        'onnx-community/Qwen2.5-0.5B-Instruct-ONNX-INT4',
+        'onnx-community/Qwen2.5-0.5B-Instruct',
         {
-          dtype: 'int4',
+          dtype: 'q4',
           progress_callback: (progress) => console.log('Loading:', progress)
         }
       );
