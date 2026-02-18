@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { pipeline, env } from '@xenova/transformers';
+import { pipeline, env } from '@huggingface/transformers';
 
 env.allowLocalModels = false;
 env.useBrowserCache = false; // temporarily false to avoid loading cached old model
@@ -12,9 +12,9 @@ export async function runGPT2(inputText) {
   if (!pipelineInstance) {
     pipelineInstance = await pipeline(
       'text-generation',
-      'Xenova/distilgpt2',
+      'onnx-community/Qwen2.5-0.5B-Instruct',
       {
-        quantized: true,
+        dtype: 'q4',
         progress_callback: (progress) => console.log('Loading:', progress)
       }
     );

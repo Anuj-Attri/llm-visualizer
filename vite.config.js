@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/Xenova': {
+      '/onnx-community': {
         target: 'https://huggingface.co',
         changeOrigin: true,
         secure: true,
