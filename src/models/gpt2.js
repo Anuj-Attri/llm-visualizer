@@ -2,11 +2,7 @@
 import { pipeline, env } from '@xenova/transformers';
 
 env.allowLocalModels = false;
-env.useBrowserCache = true;
-env.remoteHost = 'https://huggingface.co';
-env.remotePathTemplate = '{model}/resolve/{revision}/';
-
-console.log('ENV CHECK:', env.allowLocalModels, env.remoteHost);
+env.useBrowserCache = false;
 
 let pipelineInstance = null;
 
@@ -14,13 +10,14 @@ export async function runGPT2(inputText) {
   if (!inputText?.trim()) throw new Error('Input text is required');
 
   if (!pipelineInstance) {
-    console.log('Loading pipeline...');
     pipelineInstance = await pipeline(
       'text-generation',
       'Xenova/distilgpt2',
-      { revision: 'main' }
+      {
+        quantized: true,
+        progress_callback: (progress) => console.log('Loading:', progress)
+      }
     );
-    console.log('Pipeline loaded!');
   }
 
   const tokenizer = pipelineInstance.tokenizer;
