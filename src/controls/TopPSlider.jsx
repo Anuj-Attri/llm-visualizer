@@ -9,15 +9,17 @@ const MIN = 0;
 const MAX = 1;
 const STEP = 0.05;
 
-export default function TopPSlider() {
+export default function TopPSlider({ noLabel = false }) {
   const topP = useStore((s) => s.topP);
   const setTopP = useStore((s) => s.setTopP);
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor="top-p" className="text-sm font-medium text-gray-700">
-        Top-p: {Number(topP).toFixed(2)}
-      </label>
+      {!noLabel && (
+        <label htmlFor="top-p" className="text-xs font-medium uppercase tracking-widest text-[#0A0A0A]">
+          Top-p: {Number(topP).toFixed(2)}
+        </label>
+      )}
       <input
         id="top-p"
         type="range"
@@ -26,7 +28,8 @@ export default function TopPSlider() {
         step={STEP}
         value={topP}
         onChange={(e) => setTopP(Number(e.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-blue-600"
+        className="h-2 w-full cursor-pointer appearance-none bg-[#F5F5F5]"
+        style={{ accentColor: '#0A0A0A' }}
       />
     </div>
   );

@@ -1,6 +1,5 @@
 /**
  * Dropdown of preset input sentences. On select, updates inputText in the store.
- * Reads and writes: useStore.inputText, setInputText.
  */
 
 import { useStore } from '../store/useStore';
@@ -24,14 +23,15 @@ export default function PresetSelector() {
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor="preset" className="text-sm font-medium text-gray-700">
+      <label htmlFor="preset" className="text-xs font-medium uppercase tracking-widest text-[#0A0A0A]">
         Preset
       </label>
       <select
         id="preset"
         value={PRESETS.includes(inputText) ? inputText : ''}
         onChange={handleChange}
-        className="rounded border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        className="border border-[#E0E0E0] bg-[#FAFAFA] px-3 py-2 text-sm text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A]"
+        style={{ borderRadius: '2px' }}
       >
         <option value="">Choose a preset…</option>
         {PRESETS.map((p) => (

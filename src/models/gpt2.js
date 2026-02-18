@@ -1,109 +1,126 @@
-import { env } from '@xenova/transformers';
+// @ts-nocheck
+import { pipeline, env } from '@huggingface/transformers';
+
 env.allowLocalModels = false;
-env.useBrowserCache = true;
+env.useBrowserCache = false; // temporarily false to avoid loading cached old model
 
-/**
- * Loads GPT-2 (distilgpt2) via @xenova/transformers, runs a single forward pass,
- * and returns tokens, attention weights per layer/head, hidden states, and logits.
- * Models load lazily on first run.
- */
+let pipelineInstance = null;
 
-import { AutoModelForCausalLM, AutoTokenizer } from '@xenova/transformers';
-
-let cachedModel = null;
-let cachedTokenizer = null;
-
-/**
- * Run one forward pass of DistilGPT-2 on the given text.
- * Returns decoded tokens and all intermediate activations needed for visualizers.
- *
- * @param {string} inputText - Raw input sentence
- * @returns {Promise<{ tokens: string[], attentionWeights: number[][][][], hiddenStates: number[][][], logits: number[][] }>}
- */
 export async function runGPT2(inputText) {
-  if (!inputText?.trim()) {
-    throw new Error('Input text is required');
+  if (!inputText?.trim()) throw new Error('Input text is required');
+
+  if (!pipelineInstance) {
+    try {
+      pipelineInstance = await pipeline(
+        'text-generation',
+        'onnx-community/Qwen2.5-0.5B-Instruct',
+        {
+          dtype: 'q4',
+          device: 'webgpu',
+          progress_callback: (progress) => console.log('Loading:', progress)
+        }
+      );
+    } catch {
+      pipelineInstance = await pipeline(
+        'text-generation',
+        'onnx-community/Qwen2.5-0.5B-Instruct',
+        {
+          dtype: 'q4',
+          progress_callback: (progress) => console.log('Loading:', progress)
+        }
+      );
+    }
   }
 
-  if (!cachedTokenizer) {
-    cachedTokenizer = await AutoTokenizer.from_pretrained('Xenova/distilgpt2');
-  }
-  if (!cachedModel) {
-    cachedModel = await AutoModelForCausalLM.from_pretrained('Xenova/distilgpt2', {
-      output_attentions: true,
-      output_hidden_states: true,
-    });
-  }
+  const tokenizer = pipelineInstance.tokenizer;
+  const model = pipelineInstance.model;
 
-  const inputs = await cachedTokenizer(inputText.trim(), {
-    padding: false,
-    truncation: false,
-    return_tensors: true,
-  });
-
-  const outputs = await cachedModel(inputs, {
-    output_attentions: true,
-    output_hidden_states: true,
-  });
-
+  const inputs = tokenizer(inputText.trim(), { return_tensors: 'pt' });
   const tokenIds = Array.from(inputs.input_ids.data);
-  const tokens = tokenIds.map((id) => {
-    const decoded = cachedTokenizer.decode([id], { skip_special_tokens: false });
-    return decoded || `[${id}]`;
-  });
+  const tokens = tokenIds.map((id) =>
+    tokenizer.decode([id], { skip_special_tokens: false }) || `[${id}]`
+  );
 
-  const attentionWeights = [];
-  if (outputs.attentions && outputs.attentions.length > 0) {
-    for (const att of outputs.attentions) {
-      const [batch, heads, seq, seqK] = att.dims;
-      const layerHeads = [];
-      for (let h = 0; h < heads; h++) {
-        const headWeights = [];
-        for (let q = 0; q < seq; q++) {
-          const row = [];
-          for (let k = 0; k < seqK; k++) {
-            const idx = batch * heads * seq * seqK + h * seq * seqK + q * seqK + k;
-            row.push(att.data[idx]);
-          }
-          headWeights.push(row);
-        }
-        layerHeads.push(headWeights);
-      }
-      attentionWeights.push(layerHeads);
-    }
-  }
+  const outputs = await model(inputs, { output_attentions: true });
 
-  const hiddenStates = [];
-  if (outputs.hidden_states && outputs.hidden_states.length > 0) {
-    for (const hs of outputs.hidden_states) {
-      const [batch, seq, dim] = hs.dims;
-      const layer = [];
-      for (let s = 0; s < seq; s++) {
-        const vec = [];
-        for (let d = 0; d < dim; d++) {
-          vec.push(hs.data[batch * seq * dim + s * dim + d]);
-        }
-        layer.push(vec);
-      }
-      hiddenStates.push(layer);
-    }
-  }
+  console.log('OUTPUT KEYS:', Object.keys(outputs));
+  console.log('ATTENTIONS:', outputs.attentions?.length, outputs.attentions?.[0]?.dims);
 
-  const logitsTensor = outputs.logits;
-  const [batch, seqLen, vocabSize] = logitsTensor.dims;
-  const logits = [];
-  for (let s = 0; s < seqLen; s++) {
-    const row = [];
-    for (let v = 0; v < vocabSize; v++) {
-      row.push(logitsTensor.data[batch * seqLen * vocabSize + s * vocabSize + v]);
-    }
-    logits.push(row);
-  }
+  const logits = extractLogits(outputs.logits);
+  applyRepetitionPenalty(logits, tokenIds, 1.3, 3);
+
+  const attentions = extractAttentions(outputs.attentions);
 
   return {
     tokens,
-    attentionWeights,
-    hiddenStates,
+    tokenIds,
     logits,
+    attentions: attentions ?? null,
   };
+}
+
+/**
+ * Penalize last-position logits: divide by penalty for tokens in the last 8;
+ * set -Infinity for token ids that would complete a repeated trigram.
+ */
+function applyRepetitionPenalty(logits, tokenIds, penalty, ngramSize) {
+  if (!logits?.length || !tokenIds?.length) return;
+  const lastRow = logits[logits.length - 1];
+  const vocabSize = lastRow.length;
+
+  const last8 = tokenIds.slice(-8);
+  for (const id of last8) {
+    if (id >= 0 && id < vocabSize) lastRow[id] /= penalty;
+  }
+
+  if (tokenIds.length < ngramSize) return;
+  const trigrams = new Set();
+  for (let i = 0; i <= tokenIds.length - ngramSize; i++) {
+    const key = tokenIds.slice(i, i + ngramSize).join(',');
+    trigrams.add(key);
+  }
+  const lastNgramMinusOne = tokenIds.slice(-(ngramSize - 1));
+  for (let x = 0; x < vocabSize; x++) {
+    const key = [...lastNgramMinusOne, x].join(',');
+    if (trigrams.has(key)) lastRow[x] = -Infinity;
+  }
+}
+
+function extractAttentions(attentions) {
+  if (!attentions?.length) return null;
+  return attentions.map((att) => {
+    const dims = att.dims ?? att.dim;
+    if (!dims?.length || dims.length < 4) return null;
+    const [batch, heads, seq, seqK] = dims;
+    const data = att.data;
+    if (!data) return null;
+    const layerHeads = [];
+    for (let h = 0; h < heads; h++) {
+      const headGrid = [];
+      for (let q = 0; q < seq; q++) {
+        const row = [];
+        for (let k = 0; k < seqK; k++) {
+          const idx = batch * heads * seq * seqK + h * seq * seqK + q * seqK + k;
+          row.push(data[idx]);
+        }
+        headGrid.push(row);
+      }
+      layerHeads.push(headGrid);
+    }
+    return layerHeads;
+  });
+}
+
+function extractLogits(logitsTensor) {
+  if (!logitsTensor) return [];
+  const [, seqLen, vocabSize] = logitsTensor.dims;
+  return Array.from({ length: seqLen }, (_, s) =>
+    Array.from({ length: vocabSize }, (_, v) =>
+      logitsTensor.data[s * vocabSize + v]
+    )
+  );
+}
+
+export function getTokenizer() {
+  return pipelineInstance?.tokenizer ?? null;
 }
