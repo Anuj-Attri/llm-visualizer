@@ -9,15 +9,17 @@ const MIN = 0.1;
 const MAX = 2.0;
 const STEP = 0.05;
 
-export default function TemperatureSlider() {
+export default function TemperatureSlider({ noLabel = false }) {
   const temperature = useStore((s) => s.temperature);
   const setTemperature = useStore((s) => s.setTemperature);
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor="temperature" className="text-sm font-medium text-gray-700">
-        Temperature: {Number(temperature).toFixed(2)}
-      </label>
+      {!noLabel && (
+        <label htmlFor="temperature" className="text-xs font-medium uppercase tracking-widest text-[#0A0A0A]">
+          Temperature: {Number(temperature).toFixed(2)}
+        </label>
+      )}
       <input
         id="temperature"
         type="range"
@@ -26,7 +28,8 @@ export default function TemperatureSlider() {
         step={STEP}
         value={temperature}
         onChange={(e) => setTemperature(Number(e.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-blue-600"
+        className="h-2 w-full cursor-pointer appearance-none bg-[#F5F5F5]"
+        style={{ accentColor: '#0A0A0A' }}
       />
     </div>
   );

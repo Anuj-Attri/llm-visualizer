@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg-root: #FAFAFA;
+  --bg-card: #FFFFFF;
+  --text-primary: #0A0A0A;
+  --text-secondary: #6B6B6B;
+  --border: #E0E0E0;
+  --hover: #F5F5F5;
+}
+
+body {
+  background-color: var(--bg-root);
+  color: var(--text-primary);
+}
+
+.panel {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+input[type="range"] {
+  accent-color: #0A0A0A;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #F5F5F5;
+  border-radius: 0;
+}
+
+input[type="range"]::-moz-range-track {
+  background: #F5F5F5;
+  border-radius: 0;
+}
+
+@keyframes embedFill {
+  to { opacity: 1; }
+}
+
+@keyframes layerAppear {
+  to { opacity: 1; }
+}
+
+@keyframes arcStroke {
+  to { stroke-dashoffset: 0; }
+}

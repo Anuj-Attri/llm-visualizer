@@ -15,7 +15,9 @@ export async function runGPT2(inputText) {
       'Xenova/distilgpt2',
       {
         quantized: true,
-        progress_callback: (progress) => console.log('Loading:', progress)
+        progress_callback: (progress) => console.log('Loading:', progress),
+        repetition_penalty: 1.3,
+        no_repeat_ngram_size: 3,
       }
     );
   }
@@ -53,12 +55,42 @@ export async function runGPT2(inputText) {
     )
   );
 
+  const logits = extractLogits(outputs.logits);
+  applyRepetitionPenalty(logits, tokenIds, 1.3, 3);
+
   return {
     tokens,
     attentionWeights: fakeAttention,
     hiddenStates: fakeHidden,
-    logits: extractLogits(outputs.logits)
+    logits,
   };
+}
+
+/**
+ * Penalize last-position logits: divide by penalty for tokens in the last 8;
+ * set -Infinity for token ids that would complete a repeated trigram.
+ */
+function applyRepetitionPenalty(logits, tokenIds, penalty, ngramSize) {
+  if (!logits?.length || !tokenIds?.length) return;
+  const lastRow = logits[logits.length - 1];
+  const vocabSize = lastRow.length;
+
+  const last8 = tokenIds.slice(-8);
+  for (const id of last8) {
+    if (id >= 0 && id < vocabSize) lastRow[id] /= penalty;
+  }
+
+  if (tokenIds.length < ngramSize) return;
+  const trigrams = new Set();
+  for (let i = 0; i <= tokenIds.length - ngramSize; i++) {
+    const key = tokenIds.slice(i, i + ngramSize).join(',');
+    trigrams.add(key);
+  }
+  const lastNgramMinusOne = tokenIds.slice(-(ngramSize - 1));
+  for (let x = 0; x < vocabSize; x++) {
+    const key = [...lastNgramMinusOne, x].join(',');
+    if (trigrams.has(key)) lastRow[x] = -Infinity;
+  }
 }
 
 function extractAttentions(attentions) {
