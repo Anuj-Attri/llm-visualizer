@@ -2,7 +2,7 @@
 import { pipeline, env } from '@xenova/transformers';
 
 env.allowLocalModels = false;
-env.useBrowserCache = false;
+env.useBrowserCache = false; // temporarily false to avoid loading cached old model
 
 let pipelineInstance = null;
 
@@ -12,12 +12,10 @@ export async function runGPT2(inputText) {
   if (!pipelineInstance) {
     pipelineInstance = await pipeline(
       'text-generation',
-      'Xenova/distilgpt2',
+      'Xenova/Qwen1.5-0.5B',
       {
         quantized: true,
-        progress_callback: (progress) => console.log('Loading:', progress),
-        repetition_penalty: 1.3,
-        no_repeat_ngram_size: 3,
+        progress_callback: (progress) => console.log('Loading:', progress)
       }
     );
   }
