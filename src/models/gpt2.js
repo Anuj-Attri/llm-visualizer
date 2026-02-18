@@ -12,7 +12,7 @@ export async function runGPT2(inputText) {
   if (!pipelineInstance) {
     pipelineInstance = await pipeline(
       'text-generation',
-      'Xenova/Qwen1.5-0.5B',
+      'Xenova/distilgpt2',
       {
         quantized: true,
         progress_callback: (progress) => console.log('Loading:', progress)

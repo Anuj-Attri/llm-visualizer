@@ -5,23 +5,30 @@
 
 /**
  * Convert raw logits to probabilities via softmax with temperature.
+ * Iterative (non-recursive) to handle large vocabularies without stack overflow.
  * @param {Float32Array | number[]} logits - Raw logit values
  * @param {number} temperature - Sampling temperature
  * @returns {{ probs: number[], tokenIds: number[] }} Sorted by probability descending
  */
 export function softmaxWithTemperature(logits, temperature = 1.0) {
-  const T = Math.max(1e-8, temperature);
-  const scaled = Array.from(logits).map((x) => x / T);
-  const max = Math.max(...scaled);
-  const exp = scaled.map((x) => Math.exp(x - max));
-  const sum = exp.reduce((a, b) => a + b, 0);
-  const probs = exp.map((p) => p / sum);
-  const tokenIds = probs.map((_, i) => i);
-  const pairs = tokenIds.map((id, i) => ({ id, prob: probs[i] }));
-  pairs.sort((a, b) => b.prob - a.prob);
+  const scaled = logits.map((x) => x / Math.max(temperature, 0.01));
+  const maxVal = Math.max(...scaled.slice(0, Math.min(scaled.length, 100000)));
+  let sum = 0;
+  const exps = new Float32Array(scaled.length);
+  for (let i = 0; i < scaled.length; i++) {
+    exps[i] = Math.exp(scaled[i] - maxVal);
+    sum += exps[i];
+  }
+  const result = new Array(scaled.length);
+  for (let i = 0; i < scaled.length; i++) {
+    result[i] = exps[i] / sum;
+  }
+  const indices = new Array(scaled.length);
+  for (let i = 0; i < scaled.length; i++) indices[i] = i;
+  indices.sort((a, b) => result[b] - result[a]);
   return {
-    probs: pairs.map((p) => p.prob),
-    tokenIds: pairs.map((p) => p.id),
+    probs: indices.map((i) => result[i]),
+    tokenIds: indices,
   };
 }
 
