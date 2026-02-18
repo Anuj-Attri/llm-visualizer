@@ -82,6 +82,9 @@ export default function TemperatureExplorer() {
         ))}
       </div>
       <p className="mt-2 font-mono text-xs text-[#6B6B6B]">{caption}</p>
+      <p className="mt-1 text-xs text-[#6B6B6B]">
+        Higher temperature increases entropy (more uniform distribution); lower temperature decreases it (sharper, more confident).
+      </p>
     </div>
   );
 }

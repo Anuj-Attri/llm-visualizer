@@ -31,35 +31,12 @@ export async function runGPT2(inputText) {
 
   const outputs = await model(inputs);
 
-  const logitsTensor = outputs.logits;
-  const [, , vocabSize] = logitsTensor.dims;
-  const lastTokenLogits = Array.from(logitsTensor.data.slice(-vocabSize));
-
-  const seqLen = tokenIds.length;
-  const fakeAttention = Array.from({ length: 6 }, () =>
-    Array.from({ length: 12 }, () =>
-      Array.from({ length: seqLen }, (_, q) =>
-        Array.from({ length: seqLen }, (_, k) => {
-          const val = Math.exp(-Math.abs(q - k) * 0.5);
-          return val;
-        })
-      )
-    )
-  );
-
-  const fakeHidden = Array.from({ length: 7 }, () =>
-    Array.from({ length: seqLen }, () =>
-      Array.from({ length: 64 }, () => (Math.random() - 0.5) * 0.1)
-    )
-  );
-
   const logits = extractLogits(outputs.logits);
   applyRepetitionPenalty(logits, tokenIds, 1.3, 3);
 
   return {
     tokens,
-    attentionWeights: fakeAttention,
-    hiddenStates: fakeHidden,
+    tokenIds,
     logits,
   };
 }
@@ -89,30 +66,6 @@ function applyRepetitionPenalty(logits, tokenIds, penalty, ngramSize) {
     const key = [...lastNgramMinusOne, x].join(',');
     if (trigrams.has(key)) lastRow[x] = -Infinity;
   }
-}
-
-function extractAttentions(attentions) {
-  if (!attentions?.length) return [];
-  return attentions.map((att) => {
-    const [, heads, seq, seqK] = att.dims;
-    return Array.from({ length: heads }, (_, h) =>
-      Array.from({ length: seq }, (_, q) =>
-        Array.from({ length: seqK }, (_, k) =>
-          att.data[h * seq * seqK + q * seqK + k]
-        )
-      )
-    );
-  });
-}
-
-function extractHiddenStates(hiddenStates) {
-  if (!hiddenStates?.length) return [];
-  return hiddenStates.map((hs) => {
-    const [, seq, dim] = hs.dims;
-    return Array.from({ length: seq }, (_, s) =>
-      Array.from({ length: dim }, (_, d) => hs.data[s * dim + d])
-    );
-  });
 }
 
 function extractLogits(logitsTensor) {

@@ -11,8 +11,8 @@ import TopPSlider from './controls/TopPSlider';
 import ParamTooltip from './controls/ParamTooltip';
 import NextTokenPicker from './visualizers/NextTokenPicker';
 import TokenEmbeddings from './visualizers/TokenEmbeddings';
-import AttentionFlow from './visualizers/AttentionFlow';
-import LayerByLayerPrediction from './visualizers/LayerByLayerPrediction';
+import VocabularyStatistics from './visualizers/VocabularyStatistics';
+import ProbabilityDistribution from './visualizers/ProbabilityDistribution';
 import TemperatureExplorer from './visualizers/TemperatureExplorer';
 
 const DISTILGPT2_LAYERS = 6;
@@ -134,8 +134,8 @@ export default function App() {
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <TokenEmbeddings />
-          <AttentionFlow />
-          <LayerByLayerPrediction />
+          <VocabularyStatistics />
+          <ProbabilityDistribution />
           <TemperatureExplorer />
         </div>
       </main>
