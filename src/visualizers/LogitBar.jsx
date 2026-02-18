@@ -1,15 +1,20 @@
 /**
- * Horizontal bar chart of top-10 token probabilities for the last position. Reads from store.
+ * Horizontal bar chart of top-10 token probabilities for the last position. Click a bar to append that token and re-run the model.
  */
 
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { softmaxWithTemperature } from '../models/hooks';
 import { getTokenizer } from '../models/gpt2';
+import { runGPT2 } from '../models/gpt2';
 
 export default function LogitBar() {
   const modelOutput = useStore((s) => s.modelOutput);
   const temperature = useStore((s) => s.temperature);
+  const inputText = useStore((s) => s.inputText);
+  const appendToken = useStore((s) => s.appendToken);
+  const setModelOutput = useStore((s) => s.setModelOutput);
+  const setIsLoading = useStore((s) => s.setIsLoading);
 
   const top10 = useMemo(() => {
     if (!modelOutput?.logits?.length) return null;
@@ -47,14 +52,32 @@ export default function LogitBar() {
 
   const maxProb = top10[0]?.prob ?? 1;
 
+  const handlePick = (token) => {
+    const newText = inputText + token;
+    appendToken(token);
+    setIsLoading(true);
+    runGPT2(newText)
+      .then((result) => setModelOutput(result))
+      .catch((err) => {
+        console.error('Re-run failed:', err);
+        setModelOutput(null);
+      })
+      .finally(() => setIsLoading(false));
+  };
+
   return (
     <div className="rounded border border-gray-200 bg-gray-50 p-4">
       <h3 className="text-sm font-semibold text-gray-700">
-        Top 10 next-token probabilities (last position, T={temperature})
+        Top 10 next-token probabilities (last position, T={temperature}) — click to append
       </h3>
       <div className="mt-2 space-y-1.5">
-        {top10.map(({ id, prob, label }, i) => (
-          <div key={id} className="flex items-center gap-2">
+        {top10.map(({ id, prob, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => handlePick(label)}
+            className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left transition hover:bg-blue-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          >
             <span className="w-24 truncate text-xs text-gray-700" title={label}>
               {label}
             </span>
@@ -67,7 +90,7 @@ export default function LogitBar() {
             <span className="text-xs text-gray-500 w-12 text-right">
               {(prob * 100).toFixed(2)}%
             </span>
-          </div>
+          </button>
         ))}
       </div>
     </div>

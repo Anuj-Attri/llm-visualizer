@@ -20,4 +20,8 @@ export const useStore = create((set) => ({
   setCurrentHead: (currentHead) => set({ currentHead }),
   setModelOutput: (modelOutput) => set({ modelOutput }),
   setIsLoading: (isLoading) => set({ isLoading }),
+
+  appendToken: (token) => set((state) => ({
+    inputText: state.inputText + token,
+  })),
 }));

@@ -12,7 +12,7 @@ import TopPSlider from './controls/TopPSlider';
 import TokenStream from './visualizers/TokenStream';
 import AttentionHeatmap from './visualizers/AttentionHeatmap';
 import LogitBar from './visualizers/LogitBar';
-import FFNBlock from './visualizers/FFNBlock';
+import NextTokenPicker from './visualizers/NextTokenPicker';
 import ResidualStream from './visualizers/ResidualStream';
 
 const DISTILGPT2_LAYERS = 6;
@@ -119,7 +119,7 @@ export default function App() {
           <TokenStream />
           <AttentionHeatmap />
           <LogitBar />
-          <FFNBlock />
+          <NextTokenPicker />
           <ResidualStream />
         </div>
       </main>
