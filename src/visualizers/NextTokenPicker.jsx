@@ -12,6 +12,7 @@ export default function NextTokenPicker() {
   const modelOutput = useStore((s) => s.modelOutput);
   const inputText = useStore((s) => s.inputText);
   const temperature = useStore((s) => s.temperature);
+  const isLoading = useStore((s) => s.isLoading);
   const appendToken = useStore((s) => s.appendToken);
   const setModelOutput = useStore((s) => s.setModelOutput);
   const setIsLoading = useStore((s) => s.setIsLoading);
@@ -70,18 +71,22 @@ export default function NextTokenPicker() {
         {inputText || '(empty)'}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {top8.map(({ id, prob, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => handlePick(label)}
-            className="border border-[#0A0A0A] bg-[#FFFFFF] px-3 py-2 font-mono text-sm text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#FFFFFF] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A]"
-            title={`${label} (${(prob * 100).toFixed(1)}%)`}
-          >
-            <span className="block truncate max-w-[8rem]">{label}</span>
-            <span className="text-[10px] opacity-90">{(prob * 100).toFixed(1)}%</span>
-          </button>
-        ))}
+        {isLoading ? (
+          <span className="animate-pulse font-mono text-sm text-[#6B6B6B]">computing…</span>
+        ) : (
+          top8.map(({ id, prob, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handlePick(label)}
+              className="border border-[#0A0A0A] bg-[#FFFFFF] px-3 py-2 font-mono text-sm text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#FFFFFF] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A]"
+              title={`${label} (${(prob * 100).toFixed(1)}%)`}
+            >
+              <span className="block truncate max-w-[8rem]">{label}</span>
+              <span className="text-[10px] opacity-90">{(prob * 100).toFixed(1)}%</span>
+            </button>
+          ))
+        )}
       </div>
     </div>
   );

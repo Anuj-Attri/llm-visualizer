@@ -10,14 +10,26 @@ export async function runGPT2(inputText) {
   if (!inputText?.trim()) throw new Error('Input text is required');
 
   if (!pipelineInstance) {
-    pipelineInstance = await pipeline(
-      'text-generation',
-      'onnx-community/Qwen2.5-0.5B-Instruct',
-      {
-        dtype: 'q4',
-        progress_callback: (progress) => console.log('Loading:', progress)
-      }
-    );
+    try {
+      pipelineInstance = await pipeline(
+        'text-generation',
+        'onnx-community/Qwen2.5-0.5B-Instruct',
+        {
+          dtype: 'q4',
+          device: 'webgpu',
+          progress_callback: (progress) => console.log('Loading:', progress)
+        }
+      );
+    } catch {
+      pipelineInstance = await pipeline(
+        'text-generation',
+        'onnx-community/Qwen2.5-0.5B-Instruct',
+        {
+          dtype: 'q4',
+          progress_callback: (progress) => console.log('Loading:', progress)
+        }
+      );
+    }
   }
 
   const tokenizer = pipelineInstance.tokenizer;

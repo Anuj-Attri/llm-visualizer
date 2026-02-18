@@ -11,6 +11,7 @@ import { runGPT2 } from '../models/gpt2';
 export default function LogitBar() {
   const modelOutput = useStore((s) => s.modelOutput);
   const temperature = useStore((s) => s.temperature);
+  const isLoading = useStore((s) => s.isLoading);
   const inputText = useStore((s) => s.inputText);
   const appendToken = useStore((s) => s.appendToken);
   const setModelOutput = useStore((s) => s.setModelOutput);
@@ -71,27 +72,31 @@ export default function LogitBar() {
         Top 10 next-token probabilities (last position, T={temperature}) — click to append
       </h3>
       <div className="mt-2 space-y-1.5">
-        {top10.map(({ id, prob, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => handlePick(label)}
-            className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left transition hover:bg-blue-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
-          >
-            <span className="w-24 truncate text-xs text-gray-700" title={label}>
-              {label}
-            </span>
-            <div className="flex-1 min-w-0 h-5 bg-gray-200 rounded overflow-hidden">
-              <div
-                className="h-full bg-blue-600 rounded"
-                style={{ width: `${(prob / maxProb) * 100}%` }}
-              />
-            </div>
-            <span className="text-xs text-gray-500 w-12 text-right">
-              {(prob * 100).toFixed(2)}%
-            </span>
-          </button>
-        ))}
+        {isLoading ? (
+          <p className="animate-pulse font-mono text-xs text-[#6B6B6B]">computing…</p>
+        ) : (
+          top10.map(({ id, prob, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handlePick(label)}
+              className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left transition hover:bg-[#F5F5F5] focus:outline-none focus:ring-1 focus:ring-[#0A0A0A]"
+            >
+              <span className="w-24 truncate text-xs text-[#0A0A0A]" title={label}>
+                {label}
+              </span>
+              <div className="h-5 min-w-0 flex-1 overflow-hidden bg-[#F5F5F5]">
+                <div
+                  className="h-full bg-[#0A0A0A]"
+                  style={{ width: `${(prob / maxProb) * 100}%` }}
+                />
+              </div>
+              <span className="w-12 text-right text-xs text-[#6B6B6B]">
+                {(prob * 100).toFixed(2)}%
+              </span>
+            </button>
+          ))
+        )}
       </div>
     </div>
   );
