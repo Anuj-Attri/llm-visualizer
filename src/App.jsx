@@ -34,6 +34,12 @@ export default function App() {
     setIsLoading(true);
     try {
       const result = await runGPT2(inputText);
+      console.log('RESULT:', {
+        tokens: result.tokens,
+        attentionWeights: result.attentionWeights?.length,
+        hiddenStates: result.hiddenStates?.length,
+        logits: result.logits?.length,
+      });
       setModelOutput(result);
     } catch (err) {
       console.error('Run model failed:', err);
